@@ -55,12 +55,21 @@
           </el-badge>
           <span>通知</span>
         </div>
-        <div class="scroll-list">
-          <div v-for="(n, idx) in mockOrders" :key="idx" class="mini-notify-card">
-            <p class="notify-msg">{{ identity === '胖脆' ? '阿旺点餐' : '胖脆呼叫' }}</p>
-            <p class="notify-dish">「{{ n }}」</p>
-            <span class="notify-time">刚刚</span>
+        <div class="notice-list">
+          <div v-for="notice in notices" :key="notice.id" class="notice-item">
+            <div class="notice-meta">
+              <span class="notice-from">{{ notice.from }}</span>
+              <span class="notice-time">{{ notice.time }}</span>
+            </div>
+            <div class="notice-main">
+              <p class="notice-title">{{ notice.title }}</p>
+              <p class="notice-content">{{ notice.content }}</p>
+            </div>
+            <div class="notice-footer">
+              <el-button link type="danger" size="small" @click="deleteNotice(notice.id)">删除/忽略</el-button>
+            </div>
           </div>
+          <el-empty v-if="notices.length === 0" description="暂无新消息" />
         </div>
       </div>
 
@@ -102,12 +111,36 @@ const identity = ref('')
 const publishedItems = ref([])
 const avatarInput = ref(null)
 const customAvatar = ref('')
+const notices = ref([])
 
 onMounted(() => {
   identity.value = localStorage.getItem('user_identity') || '胖脆'
   customAvatar.value = localStorage.getItem(`avatar_${identity.value}`) || ''
-  loadPublishedItems()
+  
+  // 加载通知逻辑
+  const loadNotices = () => {
+    const allNotices = JSON.parse(localStorage.getItem('app_notifications') || '[]')
+    // 过滤发给当前用户的通知
+    notices.value = allNotices.filter(n => n.to === identity.value)
+  }
+
+  loadNotices()
+  
+  // 这里可以加一个简单的定时刷新
+  setInterval(loadNotices, 5000)
+
+  // 现有加载逻辑
+  const storageKey = identity.value === '胖脆' ? 'pc_kitchen_data' : 'aw_water_data'
+  publishedItems.value = JSON.parse(localStorage.getItem(storageKey) || '[]')
 })
+
+const deleteNotice = (id) => {
+  const allNotices = JSON.parse(localStorage.getItem('app_notifications') || '[]')
+  const updated = allNotices.filter(n => n.id !== id)
+  localStorage.setItem('app_notifications', JSON.stringify(updated))
+  notices.value = updated.filter(n => n.to === identity.value)
+  ElMessage.success('通知已忽略')
+}
 
 const triggerAvatarUpload = () => {
   avatarInput.value.click()
@@ -274,22 +307,33 @@ const changeIdentity = () => {
 .side-column { flex: 4; }
 .main-column { flex: 6; }
 
-.scroll-list {
+.notice-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
-.mini-notify-card {
+.notice-item {
   background: white;
-  padding: 10px;
+  padding: 12px;
   border-radius: 14px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-left: 4px solid #ff758c;
 }
 
-.notify-msg { margin: 0; font-size: 11px; font-weight: bold; color: #2d3436; }
-.notify-dish { margin: 2px 0; font-size: 10px; color: #ff758c; font-weight: bold; }
-.notify-time { font-size: 9px; color: #b2bec3; }
+.notice-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.notice-from { font-weight: bold; font-size: 12px; color: #ff758c; }
+.notice-time { font-size: 10px; color: #ced6e0; }
+
+.notice-title { font-weight: 800; font-size: 14px; margin: 0 0 4px 0; color: #2d3436; }
+.notice-content { font-size: 12px; color: #636e72; line-height: 1.4; margin: 0; }
+
+.notice-footer { text-align: right; margin-top: 8px; }
 
 .item-mini-box {
   background: white;

@@ -41,7 +41,7 @@
           </div>
         </div>
         <div class="card-action">
-          <el-button class="love-btn" :style="{ background: service.color }">
+          <el-button class="love-btn" :style="{ background: service.color }" @click="handleAwangCall(service)">
             呼叫阿旺服务
           </el-button>
         </div>
@@ -49,11 +49,57 @@
 
       <el-empty v-if="services.length === 0" description="新功能正在加载中..." />
     </div>
+
+    <!-- 终极瞬移面板：改用唯一变量名 showAwangSheet -->
+    <teleport to="body">
+      <transition name="sheet-fade">
+        <div v-if="showAwangSheet" class="sheet-overlay" @click="showAwangSheet = false"></div>
+      </transition>
+      
+      <transition name="sheet-slide">
+        <div v-if="showAwangSheet" class="custom-sheet awang-sheet">
+          <div class="sheet-indicator" @click="showAwangSheet = false"></div>
+          <div class="sheet-content">
+            <div class="sheet-header">
+              <h2 class="sheet-title">下达任务：{{ activeService?.name }}</h2>
+              <p class="sheet-desc">你好胖脆！请详细说明你的想法，阿旺技术中心将为您即刻启动。</p>
+            </div>
+            <el-form label-position="top">
+              <el-form-item label="我的具体需求">
+                <el-input 
+                  v-model="callText" 
+                  type="textarea" 
+                  placeholder="在这里输入你想对阿旺下达的指令..." 
+                  rows="5" 
+                  class="custom-textarea"
+                />
+              </el-form-item>
+              <div class="submit-row">
+                <el-button type="primary" class="send-btn awang-gradient-btn" round @click="confirmCall">
+                  下达任务指令 ⚡
+                </el-button>
+              </div>
+            </el-form>
+          </div>
+        </div>
+      </transition>
+    </teleport>
+
+    <!-- 右下角悬浮呼叫按钮 -->
+    <el-button 
+      type="primary" 
+      size="large" 
+      circle 
+      class="fab-call-btn"
+      icon="Plus"
+      @click="handleGeneralCall"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const services = ref([
   {
@@ -83,16 +129,56 @@ const services = ref([
 ])
 
 const customAvatar = ref('')
+const showAwangSheet = ref(false)
+const activeService = ref(null)
+const callText = ref('')
 
 onMounted(() => {
-  const savedData = JSON.parse(localStorage.getItem('aw_water_data') || '[]')
-  // 合并数据并赋予颜色
-  if (savedData.length > 0) {
-    const updated = savedData.map(s => ({...s, color: '#00ccff'}))
-    services.value = [...updated, ...services.value]
+  const rawData = localStorage.getItem('aw_water_data')
+  if (!rawData) {
+    // 首次运行，持久化静态服务
+    localStorage.setItem('aw_water_data', JSON.stringify(services.value))
+  } else {
+    services.value = JSON.parse(rawData).map(s => ({...s, color: s.color || '#00ccff'}))
   }
   customAvatar.value = localStorage.getItem('avatar_阿旺') || ''
 })
+
+const handleAwangCall = (service) => {
+  console.log('--- 阿旺接收到点击信号 ---', service.name)
+  activeService.value = service
+  callText.value = ''
+  showAwangSheet.value = true
+}
+
+const handleGeneralCall = () => {
+  activeService.value = { name: '新任务' }
+  callText.value = ''
+  showAwangSheet.value = true
+}
+
+const confirmCall = () => {
+  if (!callText.value) return ElMessage.warning('请描述一下你的具体需求')
+  
+  // 建立通知数据
+  const newNotice = {
+    id: Date.now(),
+    from: '胖脆',
+    to: '阿旺',
+    type: 'service',
+    title: `服务申请：${activeService.value.name}`,
+    content: callText.value,
+    time: new Date().toLocaleString()
+  }
+
+  // 存入全局通知列表
+  const allNotices = JSON.parse(localStorage.getItem('app_notifications') || '[]')
+  allNotices.unshift(newNotice)
+  localStorage.setItem('app_notifications', JSON.stringify(allNotices))
+
+  ElMessage.success('任务已由水族馆系统接收！')
+  showAwangSheet.value = false
+}
 
 const bossAvatarUrl = computed(() => {
   if (customAvatar.value) return customAvatar.value
@@ -125,8 +211,9 @@ const getCategoryLabel = (cat) => {
   height: 300px;
   filter: blur(80px);
   border-radius: 50%;
-  z-index: 0;
+  z-index: -1; /* 强制降到最低层 */
   opacity: 0.15;
+  pointer-events: none; /* 绝对禁止拦截点击 */
 }
 .a1 { top: -50px; left: -50px; background: #00ccff; animation: pulse 8s infinite alternate; }
 .a2 { bottom: 100px; right: -50px; background: #f312cb; animation: pulse 6s infinite alternate-reverse; }
@@ -246,6 +333,8 @@ const getCategoryLabel = (cat) => {
   background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, transparent 70%);
   opacity: 0;
   transition: opacity 0.5s;
+  pointer-events: none; /* 彻底解决：禁止拦截点击事件 */
+  z-index: 0;
 }
 
 .cyber-card:hover .card-glow { opacity: 0.3; }
@@ -330,8 +419,97 @@ const getCategoryLabel = (cat) => {
   transition: all 0.3s;
 }
 
-.love-btn:hover {
-  filter: brightness(1.1);
-  transform: translateY(-2px);
+.love-btn:active {
+  transform: scale(0.96);
+}
+
+/* 高度可靠的自定义面板样式 */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+}
+
+.custom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 32px 32px 0 0;
+  z-index: 2001;
+  padding: 12px 20px 40px;
+  box-shadow: 0 -10px 40px rgba(0, 75, 150, 0.1);
+}
+
+.sheet-indicator {
+  width: 40px;
+  height: 5px;
+  background: #e1e2e6;
+  border-radius: 10px;
+  margin: 0 auto 24px;
+}
+
+.sheet-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #2c3e50;
+  margin: 0 0 10px 0;
+}
+
+.sheet-desc {
+  font-size: 14px;
+  color: #636e72;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.custom-textarea :deep(.el-textarea__inner) {
+  border-radius: 16px;
+  background: #f8f9fa;
+  border: none;
+  padding: 16px;
+  font-size: 15px;
+  box-shadow: none;
+}
+
+.submit-row {
+  margin-top: 30px;
+}
+
+.send-btn {
+  width: 100%;
+  height: 54px;
+  font-size: 16px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00ccff 0%, #712eff 100%);
+  border: none;
+  box-shadow: 0 10px 20px rgba(113, 46, 255, 0.2);
+}
+
+/* 动画效果 */
+.sheet-fade-enter-active, .sheet-fade-leave-active { transition: opacity 0.3s; }
+.sheet-fade-enter-from, .sheet-fade-leave-to { opacity: 0; }
+
+.sheet-slide-enter-active, .sheet-slide-leave-active { transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1); }
+.sheet-slide-enter-from, .sheet-slide-leave-to { transform: translateY(100%); }
+
+.fab-call-btn {
+  position: fixed;
+  right: 20px;
+  bottom: 100px; /* 避开底部 Tab */
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #00ccff, #712eff);
+  border: none;
+  font-size: 24px;
+  box-shadow: 0 10px 30px rgba(113, 46, 255, 0.4);
+  transition: all 0.3s;
+}
+
+.fab-call-btn:active {
+  transform: scale(0.9);
 }
 </style>

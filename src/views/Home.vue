@@ -48,7 +48,7 @@
           <h3 class="dish-name">{{ item.name }}</h3>
           <p class="dish-desc">{{ item.description }}</p>
           <div class="dish-footer">
-            <el-button class="luxe-order-btn" round>
+            <el-button class="luxe-order-btn" round @click.stop="openOrderSheet(item)">
               <span>心动下单</span>
             </el-button>
           </div>
@@ -57,13 +57,98 @@
 
       <el-empty v-if="filteredMenus.length === 0" description="胖脆正在研发新菜谱..." />
     </div>
+
+    <!-- 厨房点餐弹窗 - 采用 Teleport 瞬移技术确保 100% 可视 -->
+    <teleport to="body">
+      <transition name="sheet-fade">
+        <div v-if="showOrder" class="sheet-overlay" @click="showOrder = false"></div>
+      </transition>
+      
+      <transition name="sheet-slide">
+        <div v-if="showOrder" class="custom-sheet kitchen-sheet">
+          <div class="sheet-indicator" @click="showOrder = false"></div>
+          <div class="sheet-content">
+            <div class="sheet-header">
+              <h2 class="sheet-title">心动下单：{{ selectedDish?.name }}</h2>
+              <p class="sheet-desc">请输入您期待的就餐时间，胖脆将为您专属烹饪。</p>
+            </div>
+            <el-form label-position="top">
+              <el-form-item label="期望就餐时间">
+                <el-input 
+                  v-model="orderTime" 
+                  placeholder="例如：今晚 7:00 或是 周末晚宴..." 
+                  class="custom-input"
+                />
+              </el-form-item>
+              <el-form-item label="口味需求 (可选)">
+                <el-input 
+                  v-model="orderNote" 
+                  type="textarea" 
+                  placeholder="少盐、加辣或是想要个甜点..." 
+                  rows="3"
+                  class="custom-textarea"
+                />
+              </el-form-item>
+              <div class="submit-row">
+                <el-button type="danger" class="order-submit-btn" round @click="submitOrder">
+                  确认下单 💖
+                </el-button>
+              </div>
+            </el-form>
+          </div>
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const activeTab = ref('all')
+const showOrder = ref(false)
+const selectedDish = ref(null)
+const orderTime = ref('')
+const orderNote = ref('')
+
+// ... (other variables)
+
+const openOrderSheet = (dish) => {
+  console.log('--- 准备下单 ---', dish.name)
+  selectedDish.value = dish
+  orderTime.value = ''
+  orderNote.value = ''
+  showOrder.value = true
+}
+
+const submitOrder = () => {
+  if (!orderTime.value) return ElMessage.warning('请填写一下期望就餐时间哦~')
+  
+  // 建立订单通知
+  const newNotice = {
+    id: Date.now(),
+    from: '阿旺',
+    to: '胖脆',
+    type: 'order',
+    title: `下单：${selectedDish.value.name}`,
+    content: `时间：${orderTime.value} | 备注：${orderNote.value || '无'}`,
+    time: new Date().toLocaleString()
+  }
+
+  // 存入全局通知列表
+  const allNotices = JSON.parse(localStorage.getItem('app_notifications') || '[]')
+  allNotices.unshift(newNotice)
+  localStorage.setItem('app_notifications', JSON.stringify(allNotices))
+
+  // 提示下单成功
+  ElMessage({
+    message: `下单成功！胖脆已收到「${selectedDish.value.name}」的订单 😋`,
+    type: 'success',
+    duration: 3000
+  })
+  showOrder.value = false
+}
 
 const categories = [
   { id: 'all', name: '全部', emoji: '💖' },
@@ -102,8 +187,14 @@ const menus = ref([...defaultMenus])
 const customAvatar = ref('')
 
 onMounted(() => {
-  const savedData = JSON.parse(localStorage.getItem('pc_kitchen_data') || '[]')
-  menus.value = [...savedData, ...defaultMenus]
+  const rawData = localStorage.getItem('pc_kitchen_data')
+  if (!rawData) {
+    // 首次运行，将静态菜单种子持久化
+    localStorage.setItem('pc_kitchen_data', JSON.stringify(defaultMenus))
+    menus.value = [...defaultMenus]
+  } else {
+    menus.value = JSON.parse(rawData)
+  }
   customAvatar.value = localStorage.getItem('avatar_胖脆') || ''
 })
 
@@ -388,6 +479,74 @@ const getCategoryLabel = (cat) => {
 }
 
 .luxe-order-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
+
+/* --- 强力自定义下单面板样式 --- */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+}
+
+.custom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 32px 32px 0 0;
+  z-index: 2001;
+  padding: 12px 20px 40px;
+  box-shadow: 0 -10px 40px rgba(255, 117, 140, 0.15);
+}
+
+.kitchen-sheet { border-top: 4px solid #ff758c; }
+
+.sheet-indicator {
+  width: 40px;
+  height: 5px;
+  background: #f1f2f6;
+  border-radius: 10px;
+  margin: 0 auto 24px;
+}
+
+.sheet-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #ff758c;
+  margin: 0 0 10px 0;
+}
+
+.sheet-desc { font-size: 14px; color: #636e72; margin-bottom: 24px; }
+
+.custom-textarea :deep(.el-textarea__inner),
+.custom-input :deep(.el-input__wrapper) {
+  border-radius: 16px;
+  background: #fffafa;
+  border: 1px solid #ffe4e6;
+  padding: 12px 16px;
+  box-shadow: none !important;
+}
+
+.submit-row { margin-top: 30px; }
+
+.order-submit-btn {
+  width: 100%;
+  height: 54px;
+  font-size: 16px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%);
+  border: none;
+  box-shadow: 0 10px 20px rgba(255, 117, 140, 0.2);
+}
+
+/* 动画效果 */
+.sheet-fade-enter-active, .sheet-fade-leave-active { transition: opacity 0.3s; }
+.sheet-fade-enter-from, .sheet-fade-leave-to { opacity: 0; }
+
+.sheet-slide-enter-active, .sheet-slide-leave-active { transition: transform 0.4s cubic-bezier(0.2, 1, 0.2, 1); }
+.sheet-slide-enter-from, .sheet-slide-leave-to { transform: translateY(100%); }
 </style>
