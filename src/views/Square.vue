@@ -145,7 +145,6 @@ onMounted(() => {
 })
 
 const handleAwangCall = (service) => {
-  console.log('--- 阿旺接收到点击信号 ---', service.name)
   activeService.value = service
   callText.value = ''
   showAwangSheet.value = true

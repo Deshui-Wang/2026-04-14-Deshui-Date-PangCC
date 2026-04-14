@@ -115,7 +115,6 @@ const orderNote = ref('')
 // ... (other variables)
 
 const openOrderSheet = (dish) => {
-  console.log('--- 准备下单 ---', dish.name)
   selectedDish.value = dish
   orderTime.value = ''
   orderNote.value = ''
