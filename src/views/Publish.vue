@@ -107,7 +107,28 @@ const handleImageChange = (file) => {
   const reader = new FileReader()
   reader.readAsDataURL(file.raw)
   reader.onload = () => {
-    form.value.image = reader.result
+    // 压缩大图：菜品图片压缩至 600 宽度，保持比例
+    const img = new Image()
+    img.src = reader.result
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      
+      const maxWidth = 600
+      let width = img.width
+      let height = img.height
+      
+      if (width > maxWidth) {
+        height = (maxWidth / width) * height
+        width = maxWidth
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      ctx.drawImage(img, 0, 0, width, height)
+      
+      form.value.image = canvas.toDataURL('image/jpeg', 0.8)
+    }
   }
 }
 

@@ -119,9 +119,30 @@ const handleAvatarChange = (e) => {
     const reader = new FileReader()
     reader.readAsDataURL(file)
     reader.onload = () => {
-      customAvatar.value = reader.result
-      localStorage.setItem(`avatar_${identity.value}`, reader.result)
-      ElMessage.success('头像更新完成')
+      // 创建图片的 Canvas 进行压缩
+      const img = new Image()
+      img.src = reader.result
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        // 头像统一压缩到 160x160
+        const size = 160
+        canvas.width = size
+        canvas.height = size
+        ctx.drawImage(img, 0, 0, size, size)
+        
+        // 转为高质量的 JPEG 格式，体积非常小
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8)
+        
+        try {
+          customAvatar.value = compressedBase64
+          localStorage.setItem(`avatar_${identity.value}`, compressedBase64)
+          ElMessage.success('头像更新并压缩完成')
+        } catch (err) {
+          console.error('存储失败:', err)
+          ElMessage.error('图片依然太大，请更换一张或清理存储')
+        }
+      }
     }
   }
 }

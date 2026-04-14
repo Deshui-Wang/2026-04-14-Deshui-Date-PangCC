@@ -111,24 +111,32 @@ onMounted(() => {
 })
 
 const loadApps = () => {
-  const data = JSON.parse(localStorage.getItem('romantic_apps') || '[]')
-  if (data.length === 0) {
-    // 初始示例数据
-    const sample = [
-      {
-        id: Date.now(),
-        title: '周末落日骑行',
-        description: '想和你一起在江边看一场日落，吹吹晚风。',
-        todos: [
-          { text: '检查单车状况', done: true },
-          { text: '买两瓶气泡水', done: false }
-        ]
-      }
-    ]
-    appointments.value = sample
-    localStorage.setItem('romantic_apps', JSON.stringify(sample))
-  } else {
-    appointments.value = data
+  try {
+    const rawData = localStorage.getItem('romantic_apps')
+    const data = rawData ? JSON.parse(rawData) : []
+    
+    if (!Array.isArray(data) || data.length === 0) {
+      // 初始示例数据
+      const sample = [
+        {
+          id: Date.now(),
+          title: '周末落日骑行',
+          description: '想和你一起在江边看一场日落，吹吹晚风。',
+          todos: [
+            { text: '检查单车状况', done: true },
+            { text: '买两瓶气泡水', done: false }
+          ]
+        }
+      ]
+      appointments.value = sample
+      localStorage.setItem('romantic_apps', JSON.stringify(sample))
+    } else {
+      appointments.value = data
+    }
+  } catch (e) {
+    console.error('数据加载失败，重置为默认值', e)
+    appointments.value = []
+    localStorage.removeItem('romantic_apps')
   }
 }
 

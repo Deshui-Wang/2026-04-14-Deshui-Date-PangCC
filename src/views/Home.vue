@@ -14,8 +14,11 @@
     <div class="float-item f7">🍦</div>
 
     <div class="header-section">
+      <!-- 女主人氛围背景 -->
+      <div class="header-banner" :style="{ backgroundImage: `url(${chefAvatarUrl})` }"></div>
+
       <div class="avatar-wrapper">
-        <el-avatar :size="72" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Pancui" class="chef-avatar" />
+        <el-avatar :size="72" :src="chefAvatarUrl" class="chef-avatar" />
         <div class="chef-badge">女主人私厨</div>
       </div>
       <h1 class="page-title">胖脆厨房</h1>
@@ -96,10 +99,17 @@ const defaultMenus = [
 ]
 
 const menus = ref([...defaultMenus])
+const customAvatar = ref('')
 
 onMounted(() => {
   const savedData = JSON.parse(localStorage.getItem('pc_kitchen_data') || '[]')
   menus.value = [...savedData, ...defaultMenus]
+  customAvatar.value = localStorage.getItem('avatar_胖脆') || ''
+})
+
+const chefAvatarUrl = computed(() => {
+  if (customAvatar.value) return customAvatar.value
+  return 'https://api.dicebear.com/7.x/avataaars/svg?seed=Pancui'
 })
 
 const filteredMenus = computed(() => {
@@ -178,6 +188,23 @@ const getCategoryLabel = (cat) => {
   z-index: 1;
   text-align: center;
   margin-bottom: 30px;
+  padding-top: 20px;
+}
+
+.header-banner {
+  position: absolute;
+  top: -40px;
+  left: -16px;
+  right: -16px;
+  height: 280px;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 100%);
+  z-index: -1;
+  filter: blur(2px);
+  pointer-events: none;
 }
 
 .avatar-wrapper {

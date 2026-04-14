@@ -10,8 +10,11 @@
     <div class="sparkle s3">⚡</div>
 
     <div class="header-section">
+      <!-- 动态氛围背景 -->
+      <div class="header-banner" :style="{ backgroundImage: `url(${bossAvatarUrl})` }"></div>
+      
       <div class="avatar-box">
-        <el-avatar :size="72" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Awang" class="awang-avatar" />
+        <el-avatar :size="72" :src="bossAvatarUrl" class="awang-avatar" />
         <div class="badge">男主人专场</div>
       </div>
       <h1 class="page-title">阿旺水族馆</h1>
@@ -50,7 +53,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const services = ref([
   {
@@ -79,6 +82,8 @@ const services = ref([
   }
 ])
 
+const customAvatar = ref('')
+
 onMounted(() => {
   const savedData = JSON.parse(localStorage.getItem('aw_water_data') || '[]')
   // 合并数据并赋予颜色
@@ -86,6 +91,12 @@ onMounted(() => {
     const updated = savedData.map(s => ({...s, color: '#00ccff'}))
     services.value = [...updated, ...services.value]
   }
+  customAvatar.value = localStorage.getItem('avatar_阿旺') || ''
+})
+
+const bossAvatarUrl = computed(() => {
+  if (customAvatar.value) return customAvatar.value
+  return 'https://api.dicebear.com/7.x/avataaars/svg?seed=Awang'
 })
 
 const getCategoryLabel = (cat) => {
@@ -146,6 +157,23 @@ const getCategoryLabel = (cat) => {
   z-index: 1;
   text-align: center;
   margin-bottom: 40px;
+  padding-top: 20px;
+}
+
+.header-banner {
+  position: absolute;
+  top: -40px;
+  left: -20px;
+  right: -20px;
+  height: 260px;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.15;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 30%, rgba(0,0,0,0) 100%);
+  z-index: -1;
+  filter: blur(2px);
+  pointer-events: none;
 }
 
 .avatar-box {
