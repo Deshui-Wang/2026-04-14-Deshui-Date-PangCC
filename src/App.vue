@@ -41,6 +41,10 @@
         <el-icon :size="20"><Calendar /></el-icon>
         <span>约定</span>
       </router-link>
+      <router-link to="/shake" class="nav-item" active-class="active">
+        <el-icon :size="20"><MagicStick /></el-icon>
+        <span>万能摇</span>
+      </router-link>
       <router-link to="/profile" class="nav-item" active-class="active">
         <el-icon :size="20"><User /></el-icon>
         <span>我的</span>

@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
+    "postcss-pxtransform": "^4.0.0",
     "vite": "^8.0.4"
   }
 }

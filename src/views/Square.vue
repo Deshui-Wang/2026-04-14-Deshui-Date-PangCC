@@ -15,7 +15,7 @@
       
       <div class="avatar-box">
         <el-avatar :size="72" :src="bossAvatarUrl" class="awang-avatar" />
-        <div class="badge">男主人专场</div>
+        <div class="badge">🉐水的异想天开专场</div>
       </div>
       <h1 class="page-title">阿旺水族馆</h1>
       <p class="page-subtitle">用科技与爱，打理我们的精致生活</p>
