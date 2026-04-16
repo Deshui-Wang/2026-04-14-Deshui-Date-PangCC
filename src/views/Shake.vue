@@ -58,7 +58,7 @@
         <div class="card-title">今天看什么？</div>
         <div class="result-display">
           <transition name="scale" mode="out-in">
-            <div :key="movieResult" class="movie-result">
+            <div :key="movieResult.name" class="movie-result">
               <span class="result-text">{{ movieResult.name || '点击起摇' }}</span>
               <span v-if="movieResult.score" class="movie-score">⭐ {{ movieResult.score }}</span>
             </div>
